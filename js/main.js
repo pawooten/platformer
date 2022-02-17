@@ -16,7 +16,13 @@ Hero.prototype.move = function (direction) {
 };
 Hero.prototype.jump = function () {
     const JUMP_SPEED = 600;
-    this.body.velocity.y = -JUMP_SPEED;
+    let canJump = this.body.touching.down;
+
+    if (canJump) {
+        this.body.velocity.y = -JUMP_SPEED;
+    }
+
+    return canJump;
 };
 
 PlayState = {};
@@ -102,7 +108,5 @@ PlayState.begin = function() {
     game.state.start('play');
 }
 window.onload = function () {
-    window.addEventListener('click', function() {
-        PlayState.begin();
-    });
+    PlayState.begin();
 };
