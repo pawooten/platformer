@@ -39,6 +39,9 @@ PlayState.preload = function () {
     this.game.load.image('hero', 'hero_stopped.png');
 
     this.game.load.audio('sfx:jump', 'jump.wav');
+    this.game.load.audio('sfx:coin', 'coin.wav');
+
+    this.game.load.spritesheet('coin', 'coin_animated.png', 22, 22);
 };
 PlayState.init = function () {
     this.game.renderer.renderSession.roundPixels = true;
@@ -57,7 +60,8 @@ PlayState.init = function () {
 // create game entities and set up world here
 PlayState.create = function () {
     this.sfx = {
-        jump: this.game.add.audio('sfx:jump')
+        jump: this.game.add.audio('sfx:jump'),
+        coin: this.game.add.audio('sfx:coin')
     };
     
     this.game.add.image(0, 0, 'background');
@@ -67,8 +71,13 @@ PlayState.update = function () {
     this._handleCollisions();
     this._handleInput();
 };
+PlayState._onHeroVsCoin = function(hero, coin) {
+    this.sfx.coin.play();
+    coin.kill();
+}
 PlayState._handleCollisions = function () {
     this.game.physics.arcade.collide(this.hero, this.platforms);
+    this.game.physics.arcade.overlap(this.hero, this.coins, this._onHeroVsCoin, null, this);
 };
 PlayState._handleInput = function () {
     if (this.keys.left.isDown) { // move hero left
@@ -83,10 +92,13 @@ PlayState._handleInput = function () {
 PlayState._loadLevel = function (data) {
     // create all the groups/layers that we need
     this.platforms = this.game.add.group();
+    this.coins = this.game.add.group();
 
     // spawn all platforms
     data.platforms.forEach(this._spawnPlatform, this);
     this._spawnCharacters({hero: data.hero});
+
+    data.coins.forEach(this._spawnCoin, this);
 
     const GRAVITY = 1200;
     this.game.physics.arcade.gravity.y = GRAVITY;
@@ -96,6 +108,15 @@ PlayState._spawnCharacters = function (data) {
     this.hero = new Hero(this.game, data.hero.x, data.hero.y);
     this.game.add.existing(this.hero);
 };
+PlayState._spawnCoin = function(coin) {
+    let sprite = this.coins.create(coin.x, coin.y, 'coin');
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animations.add('rotate', [0, 1, 2, 1], 6, true); // 6 fps, looped
+    sprite.animations.play('rotate');
+
+    this.game.physics.enable(sprite);
+    sprite.body.allowGravity = false;
+}
 PlayState._spawnPlatform = function (platform) {
     let sprite = this.platforms.create(platform.x, platform.y, platform.image);
     this.game.physics.enable(sprite);
