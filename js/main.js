@@ -1,30 +1,3 @@
-function Hero(game, x, y) {
-    // call Phaser.Sprite constructor
-    Phaser.Sprite.call(this, game, x, y, 'hero');
-    this.anchor.set(0.5, 0.5);
-    this.game.physics.enable(this);
-    this.body.collideWorldBounds = true;
-}
-
-// inherit from Phaser.Sprite
-Hero.prototype = Object.create(Phaser.Sprite.prototype);
-Hero.prototype.constructor = Hero;
-
-Hero.prototype.move = function (direction) {
-    const SPEED = 200;
-    this.body.velocity.x = direction * SPEED;
-};
-Hero.prototype.jump = function () {
-    const JUMP_SPEED = 600;
-    let canJump = this.body.touching.down;
-
-    if (canJump) {
-        this.body.velocity.y = -JUMP_SPEED;
-    }
-
-    return canJump;
-};
-
 PlayState = {};
 // load game assets here
 PlayState.preload = function () {
@@ -41,6 +14,7 @@ PlayState.preload = function () {
 
     this.game.load.audio('sfx:jump', 'jump.wav');
     this.game.load.audio('sfx:coin', 'coin.wav');
+    this.game.load.audio('sfx:stomp', 'stomp.wav');
 
     this.game.load.spritesheet('coin', 'coin_animated.png', 22, 22);
     this.game.load.spritesheet('spider', 'spider.png', 22, 22);
@@ -63,7 +37,8 @@ PlayState.init = function () {
 PlayState.create = function () {
     this.sfx = {
         jump: this.game.add.audio('sfx:jump'),
-        coin: this.game.add.audio('sfx:coin')
+        coin: this.game.add.audio('sfx:coin'),
+        stomp: this.game.add.audio('sfx:stomp')
     };
     
     this.game.add.image(0, 0, 'background');
@@ -77,11 +52,23 @@ PlayState._onHeroVsCoin = function(hero, coin) {
     this.sfx.coin.play();
     coin.kill();
 }
+PlayState._onHeroVsEnemy = function(hero, enemy) {
+    if (hero.body.velocity.y > 0) {
+        // kill enemies when hero is falling.
+        enemy.die();
+        this.sfx.stomp.play();
+        hero.bounce();
+    } else {
+        this.sfx.stomp.play();
+        this.game.state.restart();    
+    }
+}
 PlayState._handleCollisions = function () {
     this.game.physics.arcade.collide(this.hero, this.platforms);
     this.game.physics.arcade.overlap(this.hero, this.coins, this._onHeroVsCoin, null, this);
     this.game.physics.arcade.collide(this.spiders, this.platforms);
     this.game.physics.arcade.collide(this.spiders, this.enemyWalls);
+    this.game.physics.arcade.overlap(this.hero, this.spiders, this._onHeroVsEnemy, null, this);
 };
 PlayState._handleInput = function () {
     if (this.keys.left.isDown) { // move hero left

@@ -28,3 +28,10 @@ Spider.prototype.update = function () {
         this.body.velocity.x = Spider.SPEED; // turn right
     }
 };
+Spider.prototype.die = function () {
+    this.body.enable = false;
+
+    this.animations.play('die').onComplete.addOnce(function () {
+        this.kill();
+    }, this);
+};
